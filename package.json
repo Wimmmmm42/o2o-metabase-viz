@@ -10,9 +10,13 @@
   },
   "devDependencies": {
     "@metabase/custom-viz": "^0.0.1",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "react": "^19.1.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.0"
+  },
+  "dependencies": {
+    "echarts": "^6.0.0"
   }
 }
