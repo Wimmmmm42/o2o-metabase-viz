@@ -12,19 +12,21 @@ type Settings = {
   metric?: string;
 };
 
-function getLatestYear(dates: string[]): number {
-  const distinctYears = new Set<number>();
+function getYears(dates: string[]): number[] {
+  const distinct = new Set<number>();
   dates.forEach((date) => {
     const d = new Date(date);
-    distinctYears.add(d.getFullYear());
+    if (!isNaN(d.getTime())) {
+      distinct.add(d.getFullYear());
+    }
   });
-  return Math.max(...Array.from(distinctYears));
+  return Array.from(distinct).sort((a, b) => a - b);
 }
 
 function getChartData(
   series: Series,
   settings: Settings,
-): { data: [string, number][]; latestYear: number } {
+): { data: [string, number][]; years: number[]; latestYear: number } {
   const [{ data }] = series;
   const dimIndex = data.cols.findIndex(
     (col) => col.name === settings.dimension,
@@ -34,7 +36,8 @@ function getChartData(
   );
 
   if (dimIndex === -1 || metricIndex === -1) {
-    return { data: [], latestYear: new Date().getFullYear() };
+    const currentYear = new Date().getFullYear();
+    return { data: [], years: [currentYear], latestYear: currentYear };
   }
 
   const chartData: [string, number][] = data.rows.map((row) => [
@@ -42,22 +45,23 @@ function getChartData(
     Number(row[metricIndex]),
   ]);
 
-  const latestYear = getLatestYear(chartData.map(([date]) => date));
+  const years = getYears(chartData.map(([date]) => date));
+  const latestYear = years.length
+    ? years[years.length - 1]
+    : new Date().getFullYear();
 
-  return { data: chartData, latestYear };
+  return { data: chartData, years, latestYear };
 }
 
-function getOption(data: [string, number][], latestYear: number) {
-  const values = data.map((d) => d[1]);
+function getOption(data: [string, number][], displayedYear: number) {
+  const yearData = data.filter(([date]) => {
+    const d = new Date(date);
+    return !isNaN(d.getTime()) && d.getFullYear() === displayedYear;
+  });
+  const values = yearData.map((d) => d[1]);
   const min = values.length ? Math.min(...values) : 0;
   const max = values.length ? Math.max(...values) : 100;
-  console.log({ min, max });
   return {
-    title: {
-      top: 30,
-      left: "center",
-      text: String(latestYear),
-    },
     tooltip: {},
     visualMap: {
       min,
@@ -72,7 +76,7 @@ function getOption(data: [string, number][], latestYear: number) {
       left: 30,
       right: 30,
       cellSize: ["auto", 13],
-      range: latestYear,
+      range: displayedYear,
       itemStyle: {
         borderWidth: 0.5,
       },
@@ -81,7 +85,7 @@ function getOption(data: [string, number][], latestYear: number) {
     series: {
       type: "heatmap",
       coordinateSystem: "calendar",
-      data,
+      data: yearData,
     },
   };
 }
@@ -151,6 +155,19 @@ const VisualizationComponent = (props: CustomVisualizationProps<Settings>) => {
   const { height, width, settings, series } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
+  const [displayedYear, setDisplayedYear] = useState<number | null>(null);
+
+  const { data, years, latestYear } = getChartData(series, settings);
+
+  // Reset to latest year when data/settings change
+  useEffect(() => {
+    setDisplayedYear(latestYear);
+  }, [latestYear]);
+
+  const currentYear = displayedYear ?? latestYear;
+  const yearIndex = years.indexOf(currentYear);
+  const canGoPrev = yearIndex > 0;
+  const canGoNext = yearIndex < years.length - 1;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -159,20 +176,67 @@ const VisualizationComponent = (props: CustomVisualizationProps<Settings>) => {
       chartRef.current = echarts.init(containerRef.current);
     }
 
-    const { data, latestYear } = getChartData(series, settings);
-    chartRef.current.setOption(getOption(data, latestYear));
+    chartRef.current.setOption(getOption(data, currentYear), true);
 
     return () => {
       chartRef.current?.dispose();
       chartRef.current = null;
     };
-  }, [series, settings]);
+  }, [data, currentYear]);
 
   useEffect(() => {
     chartRef.current?.resize();
   }, [width, height]);
 
-  return <div ref={containerRef} style={{ width, height }} />;
+  return (
+    <div style={{ width, height, position: "relative" }}>
+      <div ref={containerRef} style={{ width, height }} />
+
+      <div
+        style={{
+          position: "absolute",
+          top: 24,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 8,
+          pointerEvents: "none",
+        }}
+      >
+        <button
+          onClick={() => canGoPrev && setDisplayedYear(years[yearIndex - 1])}
+          disabled={!canGoPrev}
+          style={{
+            pointerEvents: "all",
+            cursor: canGoPrev ? "pointer" : "default",
+            opacity: canGoPrev ? 1 : 0.3,
+            fontSize: 16,
+            padding: "0 4px",
+          }}
+        >
+          prev
+        </button>
+        <span style={{ fontSize: 16 }}>{currentYear}</span>
+        <button
+          onClick={() => canGoNext && setDisplayedYear(years[yearIndex + 1])}
+          disabled={!canGoNext}
+          style={{
+            pointerEvents: "all",
+            background: "none",
+            border: "none",
+            cursor: canGoNext ? "pointer" : "default",
+            opacity: canGoNext ? 1 : 0.3,
+            fontSize: 16,
+            padding: "0 4px",
+          }}
+        >
+          next
+        </button>
+      </div>
+    </div>
+  );
 };
 
 const StaticVisualizationComponent = (

@@ -44180,36 +44180,36 @@ function w4(e) {
 	let t = /* @__PURE__ */ new Set();
 	return e.forEach((e) => {
 		let n = new Date(e);
-		t.add(n.getFullYear());
-	}), Math.max(...Array.from(t));
+		isNaN(n.getTime()) || t.add(n.getFullYear());
+	}), Array.from(t).sort((e, t) => e - t);
 }
 function T4(e, t) {
 	let [{ data: n }] = e, r = n.cols.findIndex((e) => e.name === t.dimension), i = n.cols.findIndex((e) => e.name === t.metric);
-	if (r === -1 || i === -1) return {
-		data: [],
-		latestYear: (/* @__PURE__ */ new Date()).getFullYear()
-	};
-	let a = n.rows.map((e) => [String(e[r]), Number(e[i])]);
+	if (r === -1 || i === -1) {
+		let e = (/* @__PURE__ */ new Date()).getFullYear();
+		return {
+			data: [],
+			years: [e],
+			latestYear: e
+		};
+	}
+	let a = n.rows.map((e) => [String(e[r]), Number(e[i])]), o = w4(a.map(([e]) => e));
 	return {
 		data: a,
-		latestYear: w4(a.map(([e]) => e))
+		years: o,
+		latestYear: o.length ? o[o.length - 1] : (/* @__PURE__ */ new Date()).getFullYear()
 	};
 }
 function E4(e, t) {
-	let n = e.map((e) => e[1]), r = n.length ? Math.min(...n) : 0, i = n.length ? Math.max(...n) : 100;
-	return console.log({
-		min: r,
-		max: i
-	}), {
-		title: {
-			top: 30,
-			left: "center",
-			text: String(t)
-		},
+	let n = e.filter(([e]) => {
+		let n = new Date(e);
+		return !isNaN(n.getTime()) && n.getFullYear() === t;
+	}), r = n.map((e) => e[1]);
+	return {
 		tooltip: {},
 		visualMap: {
-			min: r,
-			max: i,
+			min: r.length ? Math.min(...r) : 0,
+			max: r.length ? Math.max(...r) : 100,
 			type: "piecewise",
 			orient: "horizontal",
 			left: "center",
@@ -44227,7 +44227,7 @@ function E4(e, t) {
 		series: {
 			type: "heatmap",
 			coordinateSystem: "calendar",
-			data: e
+			data: n
 		}
 	};
 }
@@ -44289,22 +44289,74 @@ var D4 = () => ({
 	VisualizationComponent: O4,
 	StaticVisualizationComponent: k4
 }), O4 = (e) => {
-	let { height: t, width: n, settings: r, series: i } = e, a = m4(null), o = m4(null);
+	let { height: t, width: n, settings: r, series: i } = e, a = m4(null), o = m4(null), [s, c] = f4(null), { data: l, years: u, latestYear: d } = T4(i, r);
+	p4(() => {
+		c(d);
+	}, [d]);
+	let f = s ?? d, p = u.indexOf(f), m = p > 0, h = p < u.length - 1;
 	return p4(() => {
-		if (!a.current) return;
-		o.current ||= KS(a.current);
-		let { data: e, latestYear: t } = T4(i, r);
-		return o.current.setOption(E4(e, t)), () => {
+		if (a.current) return o.current ||= KS(a.current), o.current.setOption(E4(l, f), !0), () => {
 			o.current?.dispose(), o.current = null;
 		};
-	}, [i, r]), p4(() => {
+	}, [l, f]), p4(() => {
 		o.current?.resize();
-	}, [n, t]), /* @__PURE__ */ x4("div", {
-		ref: a,
+	}, [n, t]), /* @__PURE__ */ S4("div", {
 		style: {
 			width: n,
-			height: t
-		}
+			height: t,
+			position: "relative"
+		},
+		children: [/* @__PURE__ */ x4("div", {
+			ref: a,
+			style: {
+				width: n,
+				height: t
+			}
+		}), /* @__PURE__ */ S4("div", {
+			style: {
+				position: "absolute",
+				top: 24,
+				left: 0,
+				right: 0,
+				display: "flex",
+				justifyContent: "center",
+				alignItems: "center",
+				gap: 8,
+				pointerEvents: "none"
+			},
+			children: [
+				/* @__PURE__ */ x4("button", {
+					onClick: () => m && c(u[p - 1]),
+					disabled: !m,
+					style: {
+						pointerEvents: "all",
+						cursor: m ? "pointer" : "default",
+						opacity: m ? 1 : .3,
+						fontSize: 16,
+						padding: "0 4px"
+					},
+					children: "prev"
+				}),
+				/* @__PURE__ */ x4("span", {
+					style: { fontSize: 16 },
+					children: f
+				}),
+				/* @__PURE__ */ x4("button", {
+					onClick: () => h && c(u[p + 1]),
+					disabled: !h,
+					style: {
+						pointerEvents: "all",
+						background: "none",
+						border: "none",
+						cursor: h ? "pointer" : "default",
+						opacity: h ? 1 : .3,
+						fontSize: 16,
+						padding: "0 4px"
+					},
+					children: "next"
+				})
+			]
+		})]
 	});
 }, k4 = (e) => {
 	let { settings: t, series: n } = e, r = m4(null), [i, a] = f4(null);
