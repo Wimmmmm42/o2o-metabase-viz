@@ -44177,22 +44177,31 @@ var { useState: f4, useEffect: p4, useRef: m4, useCallback: h4, useMemo: g4, use
 //#endregion
 //#region src/index.tsx
 function w4(e) {
-	let t = +uo(e + "-01-01"), n = +uo(+e + 1 + "-01-01"), r = [];
-	for (let e = t; e < n; e += 864e5) r.push([Bm(e, "{yyyy}-{MM}-{dd}", !1), Math.floor(Math.random() * 1e4)]);
-	return r;
+	let t = /* @__PURE__ */ new Set();
+	return e.forEach((e) => {
+		let n = new Date(e);
+		t.add(n.getFullYear());
+	}), Math.max(...Array.from(t));
 }
-function T4(e) {
-	let t = w4(e);
+function T4(e, t) {
+	let [{ data: n }] = e, r = n.cols.findIndex((e) => e.name === t.dimension), i = n.cols.findIndex((e) => e.name === t.metric);
+	if (r === -1 || i === -1) return {
+		data: [],
+		latestYear: (/* @__PURE__ */ new Date()).getFullYear()
+	};
+	let a = n.rows.map((e) => [String(e[r]), Number(e[i])]);
 	return {
-		title: {
-			top: 30,
-			left: "center",
-			text: `Daily Activity — ${e}`
-		},
+		data: a,
+		latestYear: w4(a.map(([e]) => e))
+	};
+}
+function E4(e, t) {
+	let n = e.map((e) => e[1]);
+	return {
 		tooltip: {},
 		visualMap: {
-			min: 0,
-			max: 1e4,
+			min: n.length ? Math.min(...n) : 0,
+			max: n.length ? Math.max(...n) : 100,
 			type: "piecewise",
 			orient: "horizontal",
 			left: "center",
@@ -44203,18 +44212,18 @@ function T4(e) {
 			left: 30,
 			right: 30,
 			cellSize: ["auto", 13],
-			range: e,
+			range: t,
 			itemStyle: { borderWidth: .5 },
 			yearLabel: { show: !1 }
 		},
 		series: {
 			type: "heatmap",
 			coordinateSystem: "calendar",
-			data: t
+			data: e
 		}
 	};
 }
-var E4 = () => ({
+var D4 = () => ({
 	id: "grid-heatmap",
 	getName: () => "Calendar Heatmap",
 	minSize: {
@@ -44231,26 +44240,56 @@ var E4 = () => ({
 	checkRenderable(e) {
 		if (e.length === 0) throw Error("No series provided");
 	},
-	settings: { year: {
-		id: "year",
-		title: "Year",
-		widget: "input",
-		getDefault() {
-			return String((/* @__PURE__ */ new Date()).getFullYear());
+	settings: {
+		dimension: {
+			id: "dimension",
+			title: "Date Column",
+			widget: "field",
+			getDefault(e) {
+				return e?.[0]?.data?.cols?.[0]?.name;
+			},
+			getProps(e) {
+				let t = e?.[0]?.data?.cols ?? [];
+				return {
+					columns: t,
+					options: t.map((e) => ({
+						name: e.display_name,
+						value: e.name
+					}))
+				};
+			}
 		},
-		getProps() {
-			return { placeholder: "e.g. 2024" };
+		metric: {
+			id: "metric",
+			title: "Metric Column",
+			widget: "field",
+			getDefault(e) {
+				return e?.[0]?.data?.cols?.[1]?.name;
+			},
+			getProps(e) {
+				let t = e?.[0]?.data?.cols ?? [];
+				return {
+					columns: t,
+					options: t.map((e) => ({
+						name: e.display_name,
+						value: e.name
+					}))
+				};
+			}
 		}
-	} },
-	VisualizationComponent: D4,
-	StaticVisualizationComponent: O4
-}), D4 = (e) => {
-	let { height: t, width: n, settings: r } = e, i = r.year ?? String((/* @__PURE__ */ new Date()).getFullYear()), a = m4(null), o = m4(null);
+	},
+	VisualizationComponent: O4,
+	StaticVisualizationComponent: k4
+}), O4 = (e) => {
+	let { height: t, width: n, settings: r, series: i } = e, a = m4(null), o = m4(null);
 	return p4(() => {
-		if (a.current) return o.current ||= KS(a.current), o.current.setOption(T4(i)), () => {
+		if (!a.current) return;
+		o.current ||= KS(a.current);
+		let { data: e, latestYear: t } = T4(i, r);
+		return o.current.setOption(E4(e, t)), () => {
 			o.current?.dispose(), o.current = null;
 		};
-	}, [i]), p4(() => {
+	}, [i, r]), p4(() => {
 		o.current?.resize();
 	}, [n, t]), /* @__PURE__ */ x4("div", {
 		ref: a,
@@ -44259,19 +44298,19 @@ var E4 = () => ({
 			height: t
 		}
 	});
-}, O4 = (e) => {
-	let { settings: t } = e, n = t.year ?? String((/* @__PURE__ */ new Date()).getFullYear()), r = m4(null), [i, a] = f4(null);
+}, k4 = (e) => {
+	let { settings: t, series: n } = e, r = m4(null), [i, a] = f4(null);
 	return p4(() => {
 		if (!r.current) return;
-		let e = KS(r.current, void 0, {
+		let { data: e, latestYear: i } = T4(n, t), o = KS(r.current, void 0, {
 			width: 540,
 			height: 360
 		});
-		e.setOption(T4(n)), a(e.getDataURL({
+		o.setOption(E4(e, i)), a(o.getDataURL({
 			type: "png",
 			pixelRatio: 2
-		})), e.dispose();
-	}, [n]), i ? /* @__PURE__ */ x4("img", {
+		})), o.dispose();
+	}, [n, t]), i ? /* @__PURE__ */ x4("img", {
 		src: i,
 		width: 540,
 		height: 360
@@ -44286,4 +44325,4 @@ var E4 = () => ({
 	});
 };
 //#endregion
-export { E4 as default };
+export { D4 as default };

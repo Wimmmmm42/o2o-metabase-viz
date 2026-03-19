@@ -3,39 +3,57 @@ import type {
   CustomStaticVisualizationProps,
   CustomVisualizationProps,
 } from "@metabase/custom-viz";
+import type { Series } from "@metabase/custom-viz";
 import * as echarts from "echarts";
 import { useEffect, useRef, useState } from "react";
 
 type Settings = {
-  year?: string;
+  dimension?: string;
+  metric?: string;
 };
 
-function getVirtualData(year: string): [string, number][] {
-  const date = +echarts.time.parse(year + "-01-01");
-  const end = +echarts.time.parse(+year + 1 + "-01-01");
-  const dayTime = 3600 * 24 * 1000;
-  const data: [string, number][] = [];
-  for (let time = date; time < end; time += dayTime) {
-    data.push([
-      echarts.time.format(time, "{yyyy}-{MM}-{dd}", false),
-      Math.floor(Math.random() * 10000),
-    ]);
-  }
-  return data;
+function getLatestYear(dates: string[]): number {
+  const distinctYears = new Set<number>();
+  dates.forEach((date) => {
+    const d = new Date(date);
+    distinctYears.add(d.getFullYear());
+  });
+  return Math.max(...Array.from(distinctYears));
 }
 
-function getOption(year: string) {
-  const data = getVirtualData(year);
+function getChartData(
+  series: Series,
+  settings: Settings,
+): { data: [string, number][]; latestYear: number } {
+  const [{ data }] = series;
+  const dimIndex = data.cols.findIndex(
+    (col) => col.name === settings.dimension,
+  );
+  const metricIndex = data.cols.findIndex(
+    (col) => col.name === settings.metric,
+  );
+
+  if (dimIndex === -1 || metricIndex === -1) {
+    return { data: [], latestYear: new Date().getFullYear() };
+  }
+
+  const chartData: [string, number][] = data.rows.map((row) => [
+    String(row[dimIndex]),
+    Number(row[metricIndex]),
+  ]);
+
+  const latestYear = getLatestYear(chartData.map(([date]) => date));
+
+  return { data: chartData, latestYear };
+}
+
+function getOption(data: [string, number][], latestYear: number) {
+  const values = data.map((d) => d[1]);
   return {
-    title: {
-      top: 30,
-      left: "center",
-      text: `Daily Activity — ${year}`,
-    },
     tooltip: {},
     visualMap: {
-      min: 0,
-      max: 10000,
+      min: values.length ? Math.min(...values) : 0,
+      max: values.length ? Math.max(...values) : 100,
       type: "piecewise" as const,
       orient: "horizontal" as const,
       left: "center",
@@ -46,7 +64,7 @@ function getOption(year: string) {
       left: 30,
       right: 30,
       cellSize: ["auto", 13],
-      range: year,
+      range: latestYear,
       itemStyle: {
         borderWidth: 0.5,
       },
@@ -75,16 +93,43 @@ const createVisualization: CreateCustomVisualization<Settings> = () => {
       }
     },
     settings: {
-      year: {
-        id: "year",
-        title: "Year",
-        widget: "input",
-        getDefault() {
-          return String(new Date().getFullYear());
+      dimension: {
+        id: "dimension",
+        title: "Date Column",
+        widget: "field",
+        getDefault(object) {
+          const s = object as Series;
+          return s?.[0]?.data?.cols?.[0]?.name;
         },
-        getProps() {
+        getProps(object) {
+          const s = object as Series;
+          const cols = s?.[0]?.data?.cols ?? [];
           return {
-            placeholder: "e.g. 2024",
+            columns: cols,
+            options: cols.map((col) => ({
+              name: col.display_name,
+              value: col.name,
+            })),
+          };
+        },
+      },
+      metric: {
+        id: "metric",
+        title: "Metric Column",
+        widget: "field",
+        getDefault(object) {
+          const s = object as Series;
+          return s?.[0]?.data?.cols?.[1]?.name;
+        },
+        getProps(object) {
+          const s = object as Series;
+          const cols = s?.[0]?.data?.cols ?? [];
+          return {
+            columns: cols,
+            options: cols.map((col) => ({
+              name: col.display_name,
+              value: col.name,
+            })),
           };
         },
       },
@@ -95,8 +140,7 @@ const createVisualization: CreateCustomVisualization<Settings> = () => {
 };
 
 const VisualizationComponent = (props: CustomVisualizationProps<Settings>) => {
-  const { height, width, settings } = props;
-  const year = settings.year ?? String(new Date().getFullYear());
+  const { height, width, settings, series } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
 
@@ -107,24 +151,20 @@ const VisualizationComponent = (props: CustomVisualizationProps<Settings>) => {
       chartRef.current = echarts.init(containerRef.current);
     }
 
-    chartRef.current.setOption(getOption(year));
+    const { data, latestYear } = getChartData(series, settings);
+    chartRef.current.setOption(getOption(data, latestYear));
 
     return () => {
       chartRef.current?.dispose();
       chartRef.current = null;
     };
-  }, [year]);
+  }, [series, settings]);
 
   useEffect(() => {
     chartRef.current?.resize();
   }, [width, height]);
 
-  return (
-    <div
-      ref={containerRef}
-      style={{ width, height }}
-    />
-  );
+  return <div ref={containerRef} style={{ width, height }} />;
 };
 
 const StaticVisualizationComponent = (
@@ -132,22 +172,22 @@ const StaticVisualizationComponent = (
 ) => {
   const width = 540;
   const height = 360;
-  const { settings } = props;
-  const year = settings.year ?? String(new Date().getFullYear());
+  const { settings, series } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const { data, latestYear } = getChartData(series, settings);
     const chart = echarts.init(containerRef.current, undefined, {
       width,
       height,
     });
-    chart.setOption(getOption(year));
+    chart.setOption(getOption(data, latestYear));
     setDataUrl(chart.getDataURL({ type: "png", pixelRatio: 2 }));
     chart.dispose();
-  }, [year]);
+  }, [series, settings]);
 
   if (dataUrl) {
     return <img src={dataUrl} width={width} height={height} />;
