@@ -49,12 +49,18 @@ export function getOption(
         realtimeSort: true,
         type: "bar",
         data: toSeriesData(values, colors),
+        // Round only the right (value) end; keep the baseline square against the
+        // axis. Order: [topLeft, topRight, bottomRight, bottomLeft].
+        itemStyle: { borderRadius: [0, 6, 6, 0] },
         label: {
           show: true,
           position: "insideRight",
           valueAnimation: true,
           color: "#ffffff",
           fontWeight: "bold",
+          fontSize: 14,
+          // Breathing room around the in-bar text (esp. off the right edge).
+          padding: [3, 8, 3, 8],
           // A dark halo keeps the white label legible on any bar colour.
           textShadowColor: "rgba(0, 0, 0, 0.55)",
           textShadowBlur: 3,
