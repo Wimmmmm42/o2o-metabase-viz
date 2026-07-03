@@ -92,18 +92,18 @@ absent and falls back to its default, so nothing breaks. Charts that customised
 
 Colour 1 `#0029D6` → Colour 2 `#86226F`:
 
-| Shade | Hex | Value band |
-|------:|-----------|-----------------------|
-| 1 | `#D6DEFF` | `0` and `0–10%` of max |
-| 2 | `#A1B1F5` | `10–20%` |
-| 3 | `#6B84EB` | `20–30%` |
-| 4 | `#3656E0` | `30–40%` |
-| 5 | `#0029D6` | `40–50%` (= Colour 1) |
-| 6 | `#1B28C1` | `50–60%` |
-| 7 | `#3626AD` | `60–70%` |
-| 8 | `#502598` | `70–80%` |
-| 9 | `#6B2384` | `80–90%` |
-| 10 | `#86226F` | `90–100%` (= Colour 2) |
+| Shade | Hex       | Value band             |
+| ----: | --------- | ---------------------- |
+|     1 | `#D6DEFF` | `0` and `0–10%` of max |
+|     2 | `#A1B1F5` | `10–20%`               |
+|     3 | `#6B84EB` | `20–30%`               |
+|     4 | `#3656E0` | `30–40%`               |
+|     5 | `#0029D6` | `40–50%` (= Colour 1)  |
+|     6 | `#1B28C1` | `50–60%`               |
+|     7 | `#3626AD` | `60–70%`               |
+|     8 | `#502598` | `70–80%`               |
+|     9 | `#6B2384` | `80–90%`               |
+|    10 | `#86226F` | `90–100%` (= Colour 2) |
 
 Known trade-off: Deep Blue and Purple are close in lightness, so the upper half
 reads as "blue darkening" until shades 9–10. This is accepted; users can pick a

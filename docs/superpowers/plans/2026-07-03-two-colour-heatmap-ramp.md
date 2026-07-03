@@ -14,13 +14,13 @@
 
 ## File Structure
 
-| File | Change |
-|------|--------|
-| `src/types.ts` | Add `color2?: string` to `Settings`. |
-| `src/utils/colors.ts` | New `getColorScale(color1, color2): string[]`; add `DEFAULT_CALENDAR_COLOR_2`; change `DEFAULT_CALENDAR_COLOR` value; remove `getCellColor`, `ColorMap`, `DARKEN`; add `ColorScale` type. |
-| `src/index.tsx` | Add `color2` Display setting; relabel existing to "Color 1". |
-| `src/settings.ts` | `getOption` gains a `color2` param; generate 10-band `pieces`; `inRange.color` becomes the ramp array. |
-| `src/Visualization.tsx` | Read `settings.color2` (default fallback) and pass it to `getOption`. |
+| File                    | Change                                                                                                                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/types.ts`          | Add `color2?: string` to `Settings`.                                                                                                                                                      |
+| `src/utils/colors.ts`   | New `getColorScale(color1, color2): string[]`; add `DEFAULT_CALENDAR_COLOR_2`; change `DEFAULT_CALENDAR_COLOR` value; remove `getCellColor`, `ColorMap`, `DARKEN`; add `ColorScale` type. |
+| `src/index.tsx`         | Add `color2` Display setting; relabel existing to "Color 1".                                                                                                                              |
+| `src/settings.ts`       | `getOption` gains a `color2` param; generate 10-band `pieces`; `inRange.color` becomes the ramp array.                                                                                    |
+| `src/Visualization.tsx` | Read `settings.color2` (default fallback) and pass it to `getOption`.                                                                                                                     |
 
 **Commit strategy (every commit type-checks green):** Tasks 1–3 are additive and safe on their own. Task 4 changes `getColorScale`'s return shape, which simultaneously breaks `settings.ts` (it indexes the old object) and `Visualization.tsx` (new required param) — so those three files change in **one** commit to keep `tsc` green.
 
@@ -50,6 +50,7 @@ Expected: PASS (no errors) — confirms a clean starting point.
 ## Task 1: Add `color2` to the Settings type
 
 **Files:**
+
 - Modify: `src/types.ts`
 
 - [ ] **Step 1: Add the optional field**
@@ -88,6 +89,7 @@ EOF
 ## Task 2: Update colour default constants
 
 **Files:**
+
 - Modify: `src/utils/colors.ts` (constants only — `getColorScale`/`getCellColor` are rewritten in Task 4)
 
 - [ ] **Step 1: Change the default and add the second default**
@@ -129,6 +131,7 @@ EOF
 ## Task 3: Expose the `color2` setting in the Display panel
 
 **Files:**
+
 - Modify: `src/index.tsx`
 
 - [ ] **Step 1: Import the second default**
@@ -191,6 +194,7 @@ EOF
 This is the core change. `getColorScale`'s return type changes from `ColorMap` to `string[]`, which forces `settings.ts` and `Visualization.tsx` to change in the same commit so `tsc` stays green. TDD-style: write the ramp assertion first, watch it fail, implement, watch it pass.
 
 **Files:**
+
 - Create (temporary, NOT committed): `verify-color-scale.mjs`
 - Modify: `src/utils/colors.ts`
 - Modify: `src/settings.ts`
@@ -307,34 +311,34 @@ export const getOption = (
 Replace this line near the top of the function body:
 
 ```ts
-  const colorScale = getColorScale(color);
+const colorScale = getColorScale(color);
 ```
 
 with:
 
 ```ts
-  const shades = getColorScale(color, color2);
+const shades = getColorScale(color, color2);
 ```
 
 Then, immediately after the `const borderRadius = getBorderRadius(cellShape, cellSize);` line (just before the `return {`), add the piece builder:
 
 ```ts
-  type Piece = {
-    min?: number;
-    max?: number;
-    gt?: number;
-    lte?: number;
-    color: string;
-  };
-  const pieces: Piece[] = [
-    { min: 0, max: 0, color: shades[0] },
-    ...shades.map((color, i): Piece => {
-      const lower = (max * i) / 10;
-      return i === shades.length - 1
-        ? { gt: lower, color }
-        : { gt: lower, lte: (max * (i + 1)) / 10, color };
-    }),
-  ];
+type Piece = {
+  min?: number;
+  max?: number;
+  gt?: number;
+  lte?: number;
+  color: string;
+};
+const pieces: Piece[] = [
+  { min: 0, max: 0, color: shades[0] },
+  ...shades.map((color, i): Piece => {
+    const lower = (max * i) / 10;
+    return i === shades.length - 1
+      ? { gt: lower, color }
+      : { gt: lower, lte: (max * (i + 1)) / 10, color };
+  }),
+];
 ```
 
 - [ ] **Step 6: Update `getOption` — use `shades` and `pieces` in `visualMap`**
@@ -387,25 +391,14 @@ import {
 Next, just after the line `const color = settings.color ?? DEFAULT_CALENDAR_COLOR;`, add:
 
 ```ts
-  const color2 = settings.color2 ?? DEFAULT_CALENDAR_COLOR_2;
+const color2 = settings.color2 ?? DEFAULT_CALENDAR_COLOR_2;
 ```
 
 Then update the `getOption` call inside `useMemo` to pass `color2` after `color`:
 
 ```ts
-  const option = useMemo(() => {
-    return getOption(
-      data,
-      currentYear,
-      color,
-      color2,
-      colorScheme,
-      cellSize,
-      cellShape,
-      dimensionCol,
-      metricCol,
-    );
-  }, [
+const option = useMemo(() => {
+  return getOption(
     data,
     currentYear,
     color,
@@ -415,7 +408,18 @@ Then update the `getOption` call inside `useMemo` to pass `color2` after `color`
     cellShape,
     dimensionCol,
     metricCol,
-  ]);
+  );
+}, [
+  data,
+  currentYear,
+  color,
+  color2,
+  colorScheme,
+  cellSize,
+  cellShape,
+  dimensionCol,
+  metricCol,
+]);
 ```
 
 - [ ] **Step 8: Run the verification script — expect PASS**
@@ -484,6 +488,7 @@ Expected: exit code 0 (no unformatted changes).
 - [ ] **Step 3: Manual visual sanity check**
 
 The ramp's exact appearance was pre-approved via the artifact preview and is pinned by the Task 4 assertion. Because this is a Metabase-hosted custom viz (it needs the host to supply `series`/`settings`), there is no standalone local render. Confirm instead that:
+
 - The Display panel now shows **Color 1** and **Color 2** pickers (from `src/index.tsx`).
 - The committed default hexes match the spec table shade 1 (`#D6DEFF`) → shade 10 (`#86226F`).
 
