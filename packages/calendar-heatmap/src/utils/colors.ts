@@ -2,8 +2,9 @@ import Color from "color";
 
 export const TEXT_COLOR = "#57606a";
 export const TEXT_COLOR_DARK = "#c9d1d9";
-export const DEFAULT_CALENDAR_COLOR = "#0029D6";
-export const DEFAULT_CALENDAR_COLOR_2 = "#86226F";
+export const DEFAULT_CALENDAR_COLOR = "#0029D6"; // Color 1 — blue, reached at value 5
+export const DEFAULT_CALENDAR_COLOR_2 = "#6AC8C8"; // Color 2 — teal, starts at value 6
+export const DEFAULT_CALENDAR_COLOR_3 = "#CF0707"; // Color 3 — red, reached at value 10
 export const EMPTY_CELL_COLOR = "#ebedf0";
 export const EMPTY_CELL_COLOR_DARK = "#21262d";
 
@@ -24,12 +25,17 @@ const LIGHTNESS = 92;
 const SATURATE = 0.1;
 
 /**
- * Build a 10-shade ramp from two colours:
- * shades 1-5 interpolate from a pale tint of color1 up to color1,
- * shades 6-10 interpolate from color1 across to color2.
- * The second half starts at t=0.2 so color1 is not duplicated.
+ * Build a 10-shade ramp from three colours:
+ * shades 1-5 interpolate from a pale tint of color1 up to color1 (so value 5
+ * lands on color1), then shades 6-10 interpolate from color2 across to color3.
+ * The second half starts *at* color2 (t=0), giving a deliberate sharp contrast
+ * at the value 5 -> value 6 boundary (color1 jumps straight to color2).
  */
-export function getColorScale(color1: string, color2: string): ColorScale {
+export function getColorScale(
+  color1: string,
+  color2: string,
+  color3: string,
+): ColorScale {
   const paleStart = Color(color1)
     .lightness(LIGHTNESS)
     .saturate(SATURATE)
@@ -37,8 +43,8 @@ export function getColorScale(color1: string, color2: string): ColorScale {
   const firstHalf = [0, 0.25, 0.5, 0.75, 1].map((t) =>
     lerpColor(paleStart, color1, t),
   );
-  const secondHalf = [0.2, 0.4, 0.6, 0.8, 1].map((t) =>
-    lerpColor(color1, color2, t),
+  const secondHalf = [0, 0.25, 0.5, 0.75, 1].map((t) =>
+    lerpColor(color2, color3, t),
   );
   return [...firstHalf, ...secondHalf];
 }

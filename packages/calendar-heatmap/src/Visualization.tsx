@@ -11,6 +11,7 @@ import type { Settings } from "./types";
 import {
   DEFAULT_CALENDAR_COLOR,
   DEFAULT_CALENDAR_COLOR_2,
+  DEFAULT_CALENDAR_COLOR_3,
 } from "./utils/colors";
 import { getChartData, toISODateString } from "./utils/data";
 import { getCellSize, getChartHeight, getChartWidth } from "./utils/looks";
@@ -155,6 +156,8 @@ export function VisualizationComponent({
   const canGoNext = yearIndex < years.length - 1;
   const color = settings.color ?? DEFAULT_CALENDAR_COLOR;
   const color2 = settings.color2 ?? DEFAULT_CALENDAR_COLOR_2;
+  const color3 = settings.color3 ?? DEFAULT_CALENDAR_COLOR_3;
+  const legendValues = settings.legendValues ?? false;
   const cellShape = settings.cellShape;
 
   const cellSize = width ? getCellSize(width) : 0;
@@ -165,6 +168,8 @@ export function VisualizationComponent({
       currentYear,
       color,
       color2,
+      color3,
+      legendValues,
       colorScheme,
       cellSize,
       cellShape,
@@ -176,6 +181,8 @@ export function VisualizationComponent({
     currentYear,
     color,
     color2,
+    color3,
+    legendValues,
     colorScheme,
     cellSize,
     cellShape,

@@ -4,6 +4,7 @@ import type { Settings } from "./types";
 import {
   DEFAULT_CALENDAR_COLOR,
   DEFAULT_CALENDAR_COLOR_2,
+  DEFAULT_CALENDAR_COLOR_3,
 } from "./utils/colors";
 import { VisualizationComponent } from "./Visualization";
 import { CellShapeWidget } from "./components/CellShapeWidget";
@@ -101,7 +102,7 @@ const createVisualization: CreateCustomVisualization<Settings> = ({
       color: defineSetting({
         id: "color",
         getSection: () => "Display",
-        title: "Color 1",
+        title: "Color 1 (low)",
         widget: "color",
         getDefault: () => DEFAULT_CALENDAR_COLOR,
         getProps: () => ({}),
@@ -109,10 +110,26 @@ const createVisualization: CreateCustomVisualization<Settings> = ({
       color2: defineSetting({
         id: "color2",
         getSection: () => "Display",
-        title: "Color 2",
+        title: "Color 2 (mid)",
         widget: "color",
         getDefault: () => DEFAULT_CALENDAR_COLOR_2,
         getProps: () => ({}),
+      }),
+      color3: defineSetting({
+        id: "color3",
+        getSection: () => "Display",
+        title: "Color 3 (high)",
+        widget: "color",
+        getDefault: () => DEFAULT_CALENDAR_COLOR_3,
+        getProps: () => ({}),
+      }),
+      legendValues: defineSetting({
+        id: "legendValues",
+        getSection: () => "Display",
+        title: "Show values on legend",
+        widget: "toggle",
+        inline: true,
+        getDefault: () => false,
       }),
       cellShape: defineSetting({
         id: "cellShape",

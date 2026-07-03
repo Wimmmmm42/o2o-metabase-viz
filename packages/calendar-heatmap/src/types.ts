@@ -5,7 +5,9 @@ export type Settings = {
   metric?: string;
   color?: string;
   color2?: string;
+  color3?: string;
   cellShape?: CellShape;
+  legendValues?: boolean;
 };
 
 export type DateString = string;
