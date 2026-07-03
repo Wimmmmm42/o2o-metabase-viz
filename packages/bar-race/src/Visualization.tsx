@@ -66,6 +66,7 @@ export function VisualizationComponent({
     chartRef.current = chart;
 
     chart.on("click", (params: echarts.ECElementEvent) => {
+      if (params.componentType !== "series") return;
       if (typeof onClickRef.current !== "function") return;
       const rd = raceDataRef.current;
       const catIndex = params.dataIndex;
@@ -93,6 +94,7 @@ export function VisualizationComponent({
     });
 
     chart.on("mouseover", (params: echarts.ECElementEvent) => {
+      if (params.componentType !== "series") return;
       if (typeof onHoverRef.current !== "function") return;
       const rd = raceDataRef.current;
       const catIndex = params.dataIndex;
