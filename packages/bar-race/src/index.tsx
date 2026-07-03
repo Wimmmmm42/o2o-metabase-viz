@@ -138,6 +138,14 @@ const createVisualization: CreateCustomVisualization<Settings> = ({
           ],
         }),
       }),
+      showFrameLabel: defineSetting({
+        id: "showFrameLabel",
+        getSection: () => "Display",
+        title: "Show frame label",
+        widget: "toggle",
+        inline: true,
+        getDefault: () => true,
+      }),
     },
     VisualizationComponent,
   });

@@ -7,4 +7,5 @@ export type Settings = {
   barsShown?: number;
   secondsPerFrame?: number;
   whenFinished?: WhenFinished;
+  showFrameLabel?: boolean;
 };

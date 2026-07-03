@@ -1,4 +1,5 @@
 import type { CustomVisualizationProps } from "@metabase/custom-viz";
+import { formatValue } from "@metabase/custom-viz";
 import * as echarts from "echarts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "./components/Button";
@@ -18,6 +19,7 @@ export function VisualizationComponent({
   const chartRef = useRef<echarts.ECharts | null>(null);
   const frameIndexRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [frameIndex, setFrameIndex] = useState(0);
 
   const raceData = useMemo(
     () => getRaceData(series, settings),
@@ -33,6 +35,7 @@ export function VisualizationComponent({
   const applyFrame = (index: number) => {
     const chart = chartRef.current;
     if (!chart) return;
+    setFrameIndex(index);
     chart.setOption({
       series: [
         {
@@ -65,6 +68,7 @@ export function VisualizationComponent({
     const chart = chartRef.current;
     if (!chart) return;
     frameIndexRef.current = 0;
+    setFrameIndex(0);
     chart.setOption(
       getOption(
         raceData.categories,
@@ -126,6 +130,14 @@ export function VisualizationComponent({
     setIsPlaying((p) => !p);
   };
 
+  const showFrameLabel = settings.showFrameLabel !== false;
+  const frameLabel =
+    raceData.frames.length > 0
+      ? formatValue(raceData.frames[frameIndex] ?? raceData.frames[0], {
+          column: raceData.frameCol,
+        })
+      : "";
+
   return (
     <div
       style={{
@@ -141,6 +153,22 @@ export function VisualizationComponent({
         </Button>
       </div>
       <div ref={containerRef} style={{ flex: "1 1 auto", minHeight: 0 }} />
+      {showFrameLabel && (
+        <div
+          style={{
+            position: "absolute",
+            right: 24,
+            bottom: 32,
+            fontSize: 32,
+            fontWeight: 700,
+            opacity: 0.35,
+            pointerEvents: "none",
+            color: colorScheme === "dark" ? "#c9d1d9" : "#57606a",
+          }}
+        >
+          {frameLabel}
+        </div>
+      )}
     </div>
   );
 }
