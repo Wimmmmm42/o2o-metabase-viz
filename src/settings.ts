@@ -124,7 +124,7 @@ export const getOption = (
       dayLabel: {
         show: true,
         silent: true,
-        firstDay: 0,
+        firstDay: 1,
         color: labelColor,
         fontSize: 11,
         nameMap: getWeekDaysLabels(dimensionCol),
@@ -135,7 +135,9 @@ export const getOption = (
         fontSize: 11,
         formatter: (params: MonthLabelFormatterParams) =>
           formatColumnAsMonth(
-            new Date(parseInt(params.yyyy), params.M),
+            // UTC noon so the month is timezone-proof (a local-midnight
+            // first-of-month rolls back to the previous month in UTC).
+            new Date(Date.UTC(parseInt(params.yyyy), params.M, 1, 12)),
             dimensionCol,
           ),
       },

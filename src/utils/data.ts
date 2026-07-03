@@ -94,13 +94,16 @@ function formatColumnAsDay(date: Date, dimensionCol: Column): string {
 
 export function getWeekDaysLabels(dimensionCol: Column): string[] {
   /**
-   * Fixed Sunday; actual date doesn't matter, only the day-of-week.
-   * echarts nameMap requires index 0 = Sunday
+   * A fixed, known Sunday used only to derive the seven weekday label
+   * names (the year/date is irrelevant, only the day-of-week matters).
+   * Built at UTC noon so the weekday is timezone-proof: a local-midnight
+   * date can roll back to the previous day in UTC and shift every label.
+   * echarts nameMap requires index 0 = Sunday.
    */
-  const sunday = new Date(2024, 0, 7);
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const sundayUtcNoon = Date.UTC(2024, 0, 7, 12);
   return Array.from({ length: 7 }, (_, i) => {
-    const day = new Date(sunday);
-    day.setDate(sunday.getDate() + i);
+    const day = new Date(sundayUtcNoon + i * DAY_MS);
     return formatColumnAsDay(day, dimensionCol);
   });
 }
