@@ -1,6 +1,6 @@
 import type { CreateCustomVisualization } from "@metabase/custom-viz";
 import { defineConfig } from "@metabase/custom-viz";
-import type { Settings } from "./types";
+import type { Settings, WhenFinished } from "./types";
 import { VisualizationComponent } from "./Visualization";
 import {
   findDefaultCategoryName,
@@ -124,6 +124,19 @@ const createVisualization: CreateCustomVisualization<Settings> = ({
         widget: "number",
         getDefault: () => 3,
         getProps: () => ({ options: { isNonNegative: true } }),
+      }),
+      whenFinished: defineSetting({
+        id: "whenFinished",
+        getSection: () => "Display",
+        title: "When finished",
+        widget: "segmentedControl",
+        getDefault: (): WhenFinished => "loop",
+        getProps: () => ({
+          options: [
+            { name: "Loop", value: "loop" },
+            { name: "Hold at end", value: "hold" },
+          ],
+        }),
       }),
     },
     VisualizationComponent,

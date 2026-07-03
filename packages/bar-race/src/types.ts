@@ -6,4 +6,5 @@ export type Settings = {
   value?: string;
   barsShown?: number;
   secondsPerFrame?: number;
+  whenFinished?: WhenFinished;
 };
