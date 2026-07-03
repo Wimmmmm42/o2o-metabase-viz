@@ -42,11 +42,13 @@ export function VisualizationComponent({
   const whenFinished = settings.whenFinished ?? "loop";
   const whenFinishedRef = useLatest(whenFinished);
 
-  const applyFrame = (index: number) => {
+  const applyFrame = (index: number, fast = false) => {
     const chart = chartRef.current;
     if (!chart) return;
     setFrameIndex(index);
     chart.setOption({
+      // Normal ticks animate over the frame duration; scrubbing jumps quickly.
+      animationDurationUpdate: fast ? 200 : Math.max(0, secondsPerFrame * 1000),
       series: [
         {
           type: "bar",
@@ -207,45 +209,73 @@ export function VisualizationComponent({
     setIsPlaying((p) => !p);
   };
 
+  const handleScrub = (index: number) => {
+    // Scrubbing pauses playback and jumps straight to the chosen frame.
+    setIsPlaying(false);
+    frameIndexRef.current = index;
+    applyFrame(index, true);
+  };
+
+  const frameCount = raceData.frames.length;
   const showFrameLabel = settings.showFrameLabel !== false;
   const frameLabel =
-    raceData.frames.length > 0
+    frameCount > 0
       ? formatValue(raceData.frames[frameIndex] ?? raceData.frames[0], {
           column: raceData.frameCol,
         })
       : "";
+  const sliderAccent = colorScheme === "dark" ? "#c9d1d9" : "#0029d6";
+  const labelTextColor = colorScheme === "dark" ? "#c9d1d9" : "#1f2933";
 
   return (
     <div
       style={{
-        position: "relative",
         display: "flex",
         flexDirection: "column",
         height: "100%",
       }}
     >
-      <div style={{ padding: "8px 8px 0", flex: "0 0 auto" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "8px 12px 4px",
+          flex: "0 0 auto",
+        }}
+      >
         <Button onClick={handlePlayPause} colorScheme={colorScheme}>
           {isPlaying ? "Pause" : "Play"}
         </Button>
+        <input
+          type="range"
+          min={0}
+          max={Math.max(0, frameCount - 1)}
+          value={frameIndex}
+          onChange={(e) => handleScrub(Number(e.target.value))}
+          aria-label="Animation frame"
+          style={{
+            flex: "1 1 auto",
+            cursor: "pointer",
+            accentColor: sliderAccent,
+          }}
+        />
+        {showFrameLabel && (
+          <span
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              whiteSpace: "nowrap",
+              textAlign: "right",
+              minWidth: 64,
+              color: labelTextColor,
+            }}
+          >
+            {frameLabel}
+          </span>
+        )}
       </div>
       <div ref={containerRef} style={{ flex: "1 1 auto", minHeight: 0 }} />
-      {showFrameLabel && (
-        <div
-          style={{
-            position: "absolute",
-            right: 24,
-            bottom: 32,
-            fontSize: 32,
-            fontWeight: 700,
-            opacity: 0.35,
-            pointerEvents: "none",
-            color: colorScheme === "dark" ? "#c9d1d9" : "#57606a",
-          }}
-        >
-          {frameLabel}
-        </div>
-      )}
     </div>
   );
 }
