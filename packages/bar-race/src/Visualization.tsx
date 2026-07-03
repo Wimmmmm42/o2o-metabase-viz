@@ -1,4 +1,8 @@
-import type { CustomVisualizationProps } from "@metabase/custom-viz";
+import type {
+  ClickObject,
+  CustomVisualizationProps,
+  RowValue,
+} from "@metabase/custom-viz";
 import { formatValue } from "@metabase/custom-viz";
 import * as echarts from "echarts";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -6,7 +10,7 @@ import { Button } from "./components/Button";
 import { useLatest } from "./hooks/useLatest";
 import { getOption, toSeriesData } from "./settings";
 import type { Settings } from "./types";
-import { getRaceData } from "./utils/data";
+import { getRaceData, rowKey } from "./utils/data";
 
 export function VisualizationComponent({
   width,
@@ -14,6 +18,8 @@ export function VisualizationComponent({
   settings,
   series,
   colorScheme,
+  onClick: onClickCb,
+  onHover: onHoverCb,
 }: CustomVisualizationProps<Settings>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
@@ -26,6 +32,10 @@ export function VisualizationComponent({
     [series, settings],
   );
   const raceDataRef = useLatest(raceData);
+  const onClickRef = useLatest(onClickCb);
+  const onHoverRef = useLatest(onHoverCb);
+  const seriesRef = useLatest(series);
+  const settingsRef = useLatest(settings);
 
   const barsShown = settings.barsShown ?? 10;
   const secondsPerFrame = settings.secondsPerFrame ?? 3;
@@ -54,11 +64,69 @@ export function VisualizationComponent({
     if (!containerRef.current) return;
     const chart = echarts.init(containerRef.current);
     chartRef.current = chart;
+
+    chart.on("click", (params: echarts.ECElementEvent) => {
+      if (typeof onClickRef.current !== "function") return;
+      const rd = raceDataRef.current;
+      const catIndex = params.dataIndex;
+      const frame = rd.frames[frameIndexRef.current];
+      const category = rd.categories[catIndex];
+      if (frame == null || category == null) return;
+      const value = rd.valuesByFrame[frameIndexRef.current]?.[catIndex];
+      const rowIndex = rd.rowLookup.get(rowKey(frame, category));
+      const rows = seriesRef.current[0].data.rows;
+      const cols = seriesRef.current[0].data.cols;
+      const row = rowIndex != null ? rows[rowIndex] : undefined;
+
+      const clickObject: ClickObject<Settings> = {
+        value,
+        column: rd.valueCol,
+        dimensions: [
+          { value: frame, column: rd.frameCol },
+          { value: category, column: rd.categoryCol },
+        ],
+        event: params.event?.event as MouseEvent | undefined,
+        origin: row ? { row: row as RowValue[], cols } : undefined,
+        settings: settingsRef.current,
+      };
+      onClickRef.current(clickObject);
+    });
+
+    chart.on("mouseover", (params: echarts.ECElementEvent) => {
+      if (typeof onHoverRef.current !== "function") return;
+      const rd = raceDataRef.current;
+      const catIndex = params.dataIndex;
+      const frame = rd.frames[frameIndexRef.current];
+      const category = rd.categories[catIndex];
+      if (frame == null || category == null) return;
+      const value = rd.valuesByFrame[frameIndexRef.current]?.[catIndex];
+      onHoverRef.current({
+        value,
+        column: rd.valueCol,
+        data: [
+          { key: rd.frameCol.display_name, col: rd.frameCol, value: frame },
+          {
+            key: rd.categoryCol.display_name,
+            col: rd.categoryCol,
+            value: category,
+          },
+          {
+            key: rd.valueCol.display_name,
+            col: rd.valueCol,
+            value: value ?? 0,
+          },
+        ],
+        event: params.event?.event as MouseEvent | undefined,
+      });
+    });
+
+    chart.on("mouseout", () => onHoverRef.current?.(null));
+
     return () => {
       chart.dispose();
       chartRef.current = null;
     };
-  }, [colorScheme]);
+  }, [colorScheme, onClickRef, onHoverRef, raceDataRef, seriesRef, settingsRef]);
 
   // NOTE: keep this effect declared BEFORE the timer effect — it resets
   // frameIndexRef to 0 so the timer never references a stale/out-of-range
