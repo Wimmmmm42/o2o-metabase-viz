@@ -2,7 +2,8 @@ import Color from "color";
 
 export const TEXT_COLOR = "#57606a";
 export const TEXT_COLOR_DARK = "#c9d1d9";
-export const DEFAULT_CALENDAR_COLOR = "#85b8e8";
+export const DEFAULT_CALENDAR_COLOR = "#0029D6";
+export const DEFAULT_CALENDAR_COLOR_2 = "#86226F";
 export const EMPTY_CELL_COLOR = "#ebedf0";
 export const EMPTY_CELL_COLOR_DARK = "#21262d";
 

@@ -1,7 +1,10 @@
 import type { CreateCustomVisualization } from "@metabase/custom-viz";
 import { defineConfig } from "@metabase/custom-viz";
 import type { Settings } from "./types";
-import { DEFAULT_CALENDAR_COLOR } from "./utils/colors";
+import {
+  DEFAULT_CALENDAR_COLOR,
+  DEFAULT_CALENDAR_COLOR_2,
+} from "./utils/colors";
 import { VisualizationComponent } from "./Visualization";
 import { CellShapeWidget } from "./components/CellShapeWidget";
 
@@ -98,9 +101,17 @@ const createVisualization: CreateCustomVisualization<Settings> = ({
       color: defineSetting({
         id: "color",
         getSection: () => "Display",
-        title: "Color",
+        title: "Color 1",
         widget: "color",
         getDefault: () => DEFAULT_CALENDAR_COLOR,
+        getProps: () => ({}),
+      }),
+      color2: defineSetting({
+        id: "color2",
+        getSection: () => "Display",
+        title: "Color 2",
+        widget: "color",
+        getDefault: () => DEFAULT_CALENDAR_COLOR_2,
         getProps: () => ({}),
       }),
       cellShape: defineSetting({

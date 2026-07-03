@@ -4,6 +4,7 @@ export type Settings = {
   dimension?: string;
   metric?: string;
   color?: string;
+  color2?: string;
   cellShape?: CellShape;
 };
 
