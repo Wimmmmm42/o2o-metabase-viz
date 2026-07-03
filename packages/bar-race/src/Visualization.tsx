@@ -227,6 +227,19 @@ export function VisualizationComponent({
   const sliderAccent = colorScheme === "dark" ? "#c9d1d9" : "#0029d6";
   const labelTextColor = colorScheme === "dark" ? "#c9d1d9" : "#1f2933";
 
+  // Custom div-based slider — Metabase's custom-viz sandbox blocks plugins from
+  // creating <input> elements, so a native range input crashes the whole render.
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const maxIndex = Math.max(0, frameCount - 1);
+  const progressPct = maxIndex > 0 ? (frameIndex / maxIndex) * 100 : 0;
+  const scrubFromClientX = (clientX: number) => {
+    const track = trackRef.current;
+    if (!track || maxIndex <= 0) return;
+    const rect = track.getBoundingClientRect();
+    const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    handleScrub(Math.round(frac * maxIndex));
+  };
+
   return (
     <div
       style={{
@@ -247,19 +260,63 @@ export function VisualizationComponent({
         <Button onClick={handlePlayPause} colorScheme={colorScheme}>
           {isPlaying ? "Pause" : "Play"}
         </Button>
-        <input
-          type="range"
-          min={0}
-          max={Math.max(0, frameCount - 1)}
-          value={frameIndex}
-          onChange={(e) => handleScrub(Number(e.target.value))}
+        <div
+          ref={trackRef}
+          role="slider"
           aria-label="Animation frame"
-          style={{
-            flex: "1 1 auto",
-            cursor: "pointer",
-            accentColor: sliderAccent,
+          aria-valuemin={0}
+          aria-valuemax={maxIndex}
+          aria-valuenow={frameIndex}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            scrubFromClientX(e.clientX);
           }}
-        />
+          onPointerMove={(e) => {
+            if (e.buttons === 1) scrubFromClientX(e.clientX);
+          }}
+          style={{
+            position: "relative",
+            flex: "1 1 auto",
+            height: 18,
+            display: "flex",
+            alignItems: "center",
+            cursor: "pointer",
+            touchAction: "none",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              height: 4,
+              borderRadius: 2,
+              background: colorScheme === "dark" ? "#3d444d" : "#d1d5db",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              width: `${progressPct}%`,
+              height: 4,
+              borderRadius: 2,
+              background: sliderAccent,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: `${progressPct}%`,
+              transform: "translateX(-50%)",
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: sliderAccent,
+              boxShadow: "0 0 0 2px rgba(255, 255, 255, 0.7)",
+            }}
+          />
+        </div>
         {showFrameLabel && (
           <span
             style={{
