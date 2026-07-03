@@ -23,11 +23,11 @@ and replace the data source with frames derived from the query.
 
 The query returns rows in long format; three columns are mapped via settings:
 
-| Role         | Widget            | Meaning                                             | Auto-default                              |
-| ------------ | ----------------- | --------------------------------------------------- | ----------------------------------------- |
-| **Frame**    | `field` dimension | distinct values sorted ascending = animation frames | first temporal column, else first dimension |
+| Role         | Widget            | Meaning                                             | Auto-default                                 |
+| ------------ | ----------------- | --------------------------------------------------- | -------------------------------------------- |
+| **Frame**    | `field` dimension | distinct values sorted ascending = animation frames | first temporal column, else first dimension  |
 | **Category** | `field` dimension | the racing bars (kept identity across frames)       | first string dimension that is not the frame |
-| **Value**    | `field` metric    | bar length                                          | first numeric column                      |
+| **Value**    | `field` metric    | bar length                                          | first numeric column                         |
 
 Example:
 
