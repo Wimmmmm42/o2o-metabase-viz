@@ -1,124 +1,113 @@
 import type { CreateCustomVisualization } from "@metabase/custom-viz";
 import { defineConfig } from "@metabase/custom-viz";
 import type { Settings } from "./types";
-import {
-  DEFAULT_CALENDAR_COLOR,
-  DEFAULT_CALENDAR_COLOR_2,
-} from "./utils/colors";
 import { VisualizationComponent } from "./Visualization";
-import { CellShapeWidget } from "./components/CellShapeWidget";
-
-import { hasDuplicateDates } from "./utils/data";
 import {
-  findDefaultDimensionName,
-  findDefaultMetricName,
-  isDimensionCol,
-  isMetricCol,
+  findDefaultCategoryName,
+  findDefaultFrameName,
+  findDefaultValueName,
+  isCategoryCol,
+  isValueCol,
 } from "./utils/isa";
 
 const createVisualization: CreateCustomVisualization<Settings> = ({
   defineSetting,
 }) => {
   return defineConfig<Settings>({
-    id: "calendar-heatmap",
-    getName: () => "Calendar Heatmap",
-    minSize: { width: 8, height: 3 },
-    defaultSize: { width: 20, height: 6 },
+    id: "bar-race",
+    getName: () => "Bar Race",
+    minSize: { width: 6, height: 4 },
+    defaultSize: { width: 12, height: 8 },
     checkRenderable(series, settings) {
       if (series.length === 0) {
         throw new Error("No series provided");
       }
       const cols = series[0]?.data?.cols ?? [];
-      const dimensionName =
-        settings.dimension ?? findDefaultDimensionName(cols);
-      const metricName = settings.metric ?? findDefaultMetricName(cols);
-      const dimensionCol = cols.find(
-        (col) => col.name === dimensionName && isDimensionCol(col),
-      );
-      const metricCol = cols.find(
-        (col) => col.name === metricName && isMetricCol(col),
-      );
+      const frameName = settings.frame ?? findDefaultFrameName(cols);
+      const categoryName =
+        settings.category ?? findDefaultCategoryName(cols, frameName);
+      const valueName = settings.value ?? findDefaultValueName(cols);
 
-      if (!dimensionCol) {
-        throw new Error("Please select a date column for the dimension.");
+      if (!frameName) {
+        throw new Error("Please select a column for the frame (time) axis.");
       }
-      if (!metricCol) {
-        throw new Error("Please select a numeric column for the metric.");
+      if (!categoryName) {
+        throw new Error("Please select a category column for the bars.");
       }
-      if (
-        hasDuplicateDates(series, {
-          ...settings,
-          dimension: dimensionName,
-          metric: metricName,
-        })
-      ) {
+      if (!valueName) {
+        throw new Error("Please select a numeric value column.");
+      }
+
+      const frameValues = new Set(
+        (series[0]?.data?.rows ?? []).map((row) => {
+          const idx = cols.findIndex((c) => c.name === frameName);
+          return String(row[idx]);
+        }),
+      );
+      if (frameValues.size < 2) {
         throw new Error(
-          "Data is unbinned: multiple entries with the same date. Please aggregate date column by day.",
+          "The frame column needs at least 2 distinct values to animate.",
         );
       }
     },
     settings: {
-      dimension: defineSetting({
-        id: "dimension",
+      frame: defineSetting({
+        id: "frame",
         getSection: () => "Data",
-        title: "Date column",
+        title: "Frame column (time)",
         widget: "field",
-        getDefault: (series) => {
-          return findDefaultDimensionName(series?.[0]?.data?.cols ?? []);
-        },
+        getDefault: (series) =>
+          findDefaultFrameName(series?.[0]?.data?.cols ?? []),
         getProps: (series) => {
           const cols = series?.[0]?.data?.cols ?? [];
-          const dimensionCols = cols.filter(isDimensionCol);
           return {
-            columns: dimensionCols,
-            options: dimensionCols.map(({ display_name, name }) => ({
+            columns: cols,
+            options: cols.map(({ display_name, name }) => ({
               name: display_name,
               value: name,
             })),
           };
         },
       }),
-      metric: defineSetting({
-        id: "metric",
+      category: defineSetting({
+        id: "category",
         getSection: () => "Data",
-        title: "Metric column",
+        title: "Category column",
         widget: "field",
-        getDefault: (series) => {
-          return findDefaultMetricName(series?.[0]?.data?.cols ?? []);
-        },
+        getDefault: (series, settings) =>
+          findDefaultCategoryName(
+            series?.[0]?.data?.cols ?? [],
+            settings.frame,
+          ),
+        readDependencies: ["frame"],
         getProps: (series) => {
-          const cols = series?.[0]?.data?.cols ?? [];
-          const metricCols = cols.filter(isMetricCol);
+          const cols = (series?.[0]?.data?.cols ?? []).filter(isCategoryCol);
           return {
-            columns: metricCols,
-            options: metricCols.map(({ display_name, name }) => ({
+            columns: cols,
+            options: cols.map(({ display_name, name }) => ({
               name: display_name,
               value: name,
             })),
           };
         },
       }),
-      color: defineSetting({
-        id: "color",
-        getSection: () => "Display",
-        title: "Color 1",
-        widget: "color",
-        getDefault: () => DEFAULT_CALENDAR_COLOR,
-        getProps: () => ({}),
-      }),
-      color2: defineSetting({
-        id: "color2",
-        getSection: () => "Display",
-        title: "Color 2",
-        widget: "color",
-        getDefault: () => DEFAULT_CALENDAR_COLOR_2,
-        getProps: () => ({}),
-      }),
-      cellShape: defineSetting({
-        id: "cellShape",
-        getSection: () => "Display",
-        title: "Cell Shape",
-        widget: CellShapeWidget,
+      value: defineSetting({
+        id: "value",
+        getSection: () => "Data",
+        title: "Value column",
+        widget: "field",
+        getDefault: (series) =>
+          findDefaultValueName(series?.[0]?.data?.cols ?? []),
+        getProps: (series) => {
+          const cols = (series?.[0]?.data?.cols ?? []).filter(isValueCol);
+          return {
+            columns: cols,
+            options: cols.map(({ display_name, name }) => ({
+              name: display_name,
+              value: name,
+            })),
+          };
+        },
       }),
     },
     VisualizationComponent,
