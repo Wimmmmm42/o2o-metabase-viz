@@ -19,11 +19,15 @@ Monorepo of Metabase custom visualizations. One plugin per folder under
 
 ## The custom-viz SDK contract
 
-Every viz is just a React component registered via `defineConfig`. The contract
+Every viz is a React component registered via `defineConfig`. The contract
 (see `packages/calendar-heatmap/src/index.tsx` and `Visualization.tsx`):
 
-- **Entry** (`src/index.tsx`): `defineConfig<Settings>({ id, getName, minSize,
-defaultSize, checkRenderable, settings, VisualizationComponent })`.
+- **Entry** (`src/index.tsx`): default-export a
+  `CreateCustomVisualization<Settings>` factory. The SDK calls it with
+  `{ defineSetting, locale }` and expects a `defineConfig<Settings>({ id,
+getName, minSize, defaultSize, checkRenderable, settings,
+VisualizationComponent })` back. `defineSetting` is injected here (not imported)
+  — it's what you use to declare each setting below.
 - **`VisualizationComponent`**: a React component receiving
   `CustomVisualizationProps<Settings>` = `{ height, width, settings, series,
 onClick, onHover, colorScheme }`. Render anything you want into the div.
@@ -31,9 +35,11 @@ onClick, onHover, colorScheme }`. Render anything you want into the div.
   `display_name`, plus type flags) and `series[0].data.rows` (arrays of raw
   values, column-aligned). Map these into whatever shape your renderer needs —
   see `src/utils/data.ts` (`getChartData`) for the pattern.
-- **Settings** are declared with `defineSetting({ id, getSection, title, widget,
-getDefault, getProps })`. Widgets: `"field"` (column picker), `"color"`, or a
-  custom React widget component (see `CellShapeWidget`).
+- **Settings** are declared with the injected `defineSetting({ id, getSection,
+title, widget, getDefault, getProps })`. Widgets: `"field"` (column picker),
+  `"color"`, other built-ins Metabase ships (`"number"`, `"input"`, `"toggle"`,
+  `"select"`, `"radio"`, …), or a custom React widget component (see
+  `CellShapeWidget`).
 - **`checkRenderable(series, settings)`** throws human-readable errors when the
   data can't be drawn (wrong column types, unaggregated data, etc.).
 - **Interaction**: wire the renderer's click/hover to `onClick`/`onHover` to get

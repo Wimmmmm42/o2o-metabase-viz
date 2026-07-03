@@ -60,6 +60,7 @@ Deleted from the copied skeleton (not needed): `src/components/CellShapeWidget.t
 ## Task 1: Scaffold the `bar-race` package
 
 **Files:**
+
 - Create (copy): `packages/bar-race/` from `packages/calendar-heatmap/`
 - Modify: `packages/bar-race/package.json`
 - Modify: `packages/bar-race/metabase-plugin.json`
@@ -67,6 +68,12 @@ Deleted from the copied skeleton (not needed): `src/components/CellShapeWidget.t
 - Delete: `packages/bar-race/public/assets/calendar.svg`
 
 - [ ] **Step 1: Copy the skeleton and remove build artifacts**
+
+This uses **Option B (copy an existing package)** from
+[docs/adding-a-new-viz.md](../../adding-a-new-viz.md) — the option that doc
+recommends for porting an ECharts example, since it inherits the repo
+conventions and the reusable helpers (`Button`, `useLatest`, `isa`, the
+`echarts.init` lifecycle) that later tasks build on.
 
 ```bash
 cp -R packages/calendar-heatmap packages/bar-race
@@ -165,6 +172,7 @@ git commit -m "feat(bar-race): scaffold package from calendar-heatmap skeleton"
 Replaces the copied heatmap logic with a bar race that renders the **first frame** as static sorted bars. No animation yet. This is the largest task because the SDK types the settings map as `Record<keyof Settings, …>` — the `Settings` type, the settings map, and the component must move together to stay green.
 
 **Files:**
+
 - Create/replace: `packages/bar-race/src/types.ts`
 - Replace: `packages/bar-race/src/utils/isa.ts`
 - Replace: `packages/bar-race/src/utils/colors.ts`
@@ -298,7 +306,7 @@ export type RaceData = {
 };
 
 export function rowKey(frame: string, category: string): string {
-  return `${frame} ${category}`;
+  return `${frame}�${category}`;
 }
 
 function compareFrames(a: string, b: string, frameCol: Column): number {
@@ -516,7 +524,10 @@ const createVisualization: CreateCustomVisualization<Settings> = ({
         title: "Category column",
         widget: "field",
         getDefault: (series, settings) =>
-          findDefaultCategoryName(series?.[0]?.data?.cols ?? [], settings.frame),
+          findDefaultCategoryName(
+            series?.[0]?.data?.cols ?? [],
+            settings.frame,
+          ),
         readDependencies: ["frame"],
         getProps: (series) => {
           const cols = (series?.[0]?.data?.cols ?? []).filter(isCategoryCol);
@@ -611,12 +622,7 @@ export function VisualizationComponent({
     chartRef.current?.resize();
   }, [width, height]);
 
-  return (
-    <div
-      ref={containerRef}
-      style={{ width: "100%", height: "100%" }}
-    />
-  );
+  return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
 }
 ```
 
@@ -643,6 +649,7 @@ git commit -m "feat(bar-race): static first-frame bar chart from long-format dat
 Adds the frame-advance timer and the two numeric Display settings that control it.
 
 **Files:**
+
 - Modify: `packages/bar-race/src/types.ts`
 - Modify: `packages/bar-race/src/index.tsx`
 - Modify: `packages/bar-race/src/Visualization.tsx`
@@ -794,6 +801,7 @@ git commit -m "feat(bar-race): autoplay frame animation with bars-shown and spee
 ## Task 4: Play/pause control + when-finished (loop / hold) setting
 
 **Files:**
+
 - Modify: `packages/bar-race/src/types.ts`
 - Modify: `packages/bar-race/src/index.tsx`
 - Modify: `packages/bar-race/src/Visualization.tsx`
@@ -1001,6 +1009,7 @@ git commit -m "feat(bar-race): play/pause control and loop/hold end behavior"
 Shows the current frame value (e.g. the month) large in the bottom-right, the classic bar-race flourish.
 
 **Files:**
+
 - Modify: `packages/bar-race/src/types.ts`
 - Modify: `packages/bar-race/src/index.tsx`
 - Modify: `packages/bar-race/src/Visualization.tsx`
@@ -1047,68 +1056,70 @@ import { formatValue } from "@metabase/custom-viz";
 Add a state hook for the visible frame index, next to the existing `isPlaying` state:
 
 ```tsx
-  const [frameIndex, setFrameIndex] = useState(0);
+const [frameIndex, setFrameIndex] = useState(0);
 ```
 
 Update `applyFrame` to also set that state, so the overlay re-renders each frame:
 
 ```tsx
-  const applyFrame = (index: number) => {
-    const chart = chartRef.current;
-    if (!chart) return;
-    setFrameIndex(index);
-    chart.setOption({
-      series: [
-        {
-          type: "bar",
-          data: toSeriesData(
-            raceDataRef.current.valuesByFrame[index],
-            raceDataRef.current.colors,
-          ),
-        },
-      ],
-    });
-  };
+const applyFrame = (index: number) => {
+  const chart = chartRef.current;
+  if (!chart) return;
+  setFrameIndex(index);
+  chart.setOption({
+    series: [
+      {
+        type: "bar",
+        data: toSeriesData(
+          raceDataRef.current.valuesByFrame[index],
+          raceDataRef.current.colors,
+        ),
+      },
+    ],
+  });
+};
 ```
 
 In the base-option effect, reset the visible index alongside the ref:
 
 ```tsx
-    frameIndexRef.current = 0;
-    setFrameIndex(0);
+frameIndexRef.current = 0;
+setFrameIndex(0);
 ```
 
 Compute the label just before `return` and render it as an absolutely-positioned overlay. Add this before the `return`:
 
 ```tsx
-  const showFrameLabel = settings.showFrameLabel !== false;
-  const frameLabel =
-    raceData.frames.length > 0
-      ? formatValue(raceData.frames[frameIndex] ?? raceData.frames[0], {
-          column: raceData.frameCol,
-        })
-      : "";
+const showFrameLabel = settings.showFrameLabel !== false;
+const frameLabel =
+  raceData.frames.length > 0
+    ? formatValue(raceData.frames[frameIndex] ?? raceData.frames[0], {
+        column: raceData.frameCol,
+      })
+    : "";
 ```
 
 Then, inside the outer `<div>` (which already has `position: "relative"`), add this overlay as the last child, after the chart `<div>`:
 
 ```tsx
-      {showFrameLabel && (
-        <div
-          style={{
-            position: "absolute",
-            right: 24,
-            bottom: 32,
-            fontSize: 32,
-            fontWeight: 700,
-            opacity: 0.35,
-            pointerEvents: "none",
-            color: colorScheme === "dark" ? "#c9d1d9" : "#57606a",
-          }}
-        >
-          {frameLabel}
-        </div>
-      )}
+{
+  showFrameLabel && (
+    <div
+      style={{
+        position: "absolute",
+        right: 24,
+        bottom: 32,
+        fontSize: 32,
+        fontWeight: 700,
+        opacity: 0.35,
+        pointerEvents: "none",
+        color: colorScheme === "dark" ? "#c9d1d9" : "#57606a",
+      }}
+    >
+      {frameLabel}
+    </div>
+  );
+}
 ```
 
 - [ ] **Step 4: Verify and commit**
@@ -1127,6 +1138,7 @@ git commit -m "feat(bar-race): current-frame label overlay with show/hide toggle
 Wires ECharts bar events to the SDK's `onClick`/`onHover` so clicking a bar drills into the underlying `(frame, category, value)` row and hovering shows a tooltip.
 
 **Files:**
+
 - Modify: `packages/bar-race/src/Visualization.tsx`
 
 - [ ] **Step 1: Add the required imports**
@@ -1160,10 +1172,10 @@ export function VisualizationComponent({
 Then add these four refs alongside the existing `raceDataRef` declaration:
 
 ```tsx
-  const onClickRef = useLatest(onClickCb);
-  const onHoverRef = useLatest(onHoverCb);
-  const seriesRef = useLatest(series);
-  const settingsRef = useLatest(settings);
+const onClickRef = useLatest(onClickCb);
+const onHoverRef = useLatest(onHoverCb);
+const seriesRef = useLatest(series);
+const settingsRef = useLatest(settings);
 ```
 
 - [ ] **Step 2: Register chart event handlers in the init effect**
@@ -1171,73 +1183,73 @@ Then add these four refs alongside the existing `raceDataRef` declaration:
 Replace the init-and-dispose `useEffect` with:
 
 ```tsx
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const chart = echarts.init(containerRef.current);
-    chartRef.current = chart;
+useEffect(() => {
+  if (!containerRef.current) return;
+  const chart = echarts.init(containerRef.current);
+  chartRef.current = chart;
 
-    chart.on("click", (params: echarts.ECElementEvent) => {
-      if (typeof onClickRef.current !== "function") return;
-      const rd = raceDataRef.current;
-      const catIndex = params.dataIndex;
-      const frame = rd.frames[frameIndexRef.current];
-      const category = rd.categories[catIndex];
-      if (frame == null || category == null) return;
-      const value = rd.valuesByFrame[frameIndexRef.current]?.[catIndex];
-      const rowIndex = rd.rowLookup.get(rowKey(frame, category));
-      const rows = seriesRef.current[0].data.rows;
-      const cols = seriesRef.current[0].data.cols;
-      const row = rowIndex != null ? rows[rowIndex] : undefined;
+  chart.on("click", (params: echarts.ECElementEvent) => {
+    if (typeof onClickRef.current !== "function") return;
+    const rd = raceDataRef.current;
+    const catIndex = params.dataIndex;
+    const frame = rd.frames[frameIndexRef.current];
+    const category = rd.categories[catIndex];
+    if (frame == null || category == null) return;
+    const value = rd.valuesByFrame[frameIndexRef.current]?.[catIndex];
+    const rowIndex = rd.rowLookup.get(rowKey(frame, category));
+    const rows = seriesRef.current[0].data.rows;
+    const cols = seriesRef.current[0].data.cols;
+    const row = rowIndex != null ? rows[rowIndex] : undefined;
 
-      const clickObject: ClickObject<Settings> = {
-        value,
-        column: rd.valueCol,
-        dimensions: [
-          { value: frame, column: rd.frameCol },
-          { value: category, column: rd.categoryCol },
-        ],
-        event: params.event?.event as MouseEvent | undefined,
-        origin: row ? { row: row as RowValue[], cols } : undefined,
-        settings: settingsRef.current,
-      };
-      onClickRef.current(clickObject);
-    });
-
-    chart.on("mouseover", (params: echarts.ECElementEvent) => {
-      if (typeof onHoverRef.current !== "function") return;
-      const rd = raceDataRef.current;
-      const catIndex = params.dataIndex;
-      const frame = rd.frames[frameIndexRef.current];
-      const category = rd.categories[catIndex];
-      if (frame == null || category == null) return;
-      const value = rd.valuesByFrame[frameIndexRef.current]?.[catIndex];
-      onHoverRef.current({
-        value,
-        column: rd.valueCol,
-        data: [
-          { key: rd.frameCol.display_name, col: rd.frameCol, value: frame },
-          {
-            key: rd.categoryCol.display_name,
-            col: rd.categoryCol,
-            value: category,
-          },
-          {
-            key: rd.valueCol.display_name,
-            col: rd.valueCol,
-            value: value ?? 0,
-          },
-        ],
-        event: params.event?.event as MouseEvent | undefined,
-      });
-    });
-
-    chart.on("mouseout", () => onHoverRef.current?.(null));
-
-    return () => {
-      chart.dispose();
-      chartRef.current = null;
+    const clickObject: ClickObject<Settings> = {
+      value,
+      column: rd.valueCol,
+      dimensions: [
+        { value: frame, column: rd.frameCol },
+        { value: category, column: rd.categoryCol },
+      ],
+      event: params.event?.event as MouseEvent | undefined,
+      origin: row ? { row: row as RowValue[], cols } : undefined,
+      settings: settingsRef.current,
     };
-  }, [colorScheme, onClickRef, onHoverRef, raceDataRef, seriesRef, settingsRef]);
+    onClickRef.current(clickObject);
+  });
+
+  chart.on("mouseover", (params: echarts.ECElementEvent) => {
+    if (typeof onHoverRef.current !== "function") return;
+    const rd = raceDataRef.current;
+    const catIndex = params.dataIndex;
+    const frame = rd.frames[frameIndexRef.current];
+    const category = rd.categories[catIndex];
+    if (frame == null || category == null) return;
+    const value = rd.valuesByFrame[frameIndexRef.current]?.[catIndex];
+    onHoverRef.current({
+      value,
+      column: rd.valueCol,
+      data: [
+        { key: rd.frameCol.display_name, col: rd.frameCol, value: frame },
+        {
+          key: rd.categoryCol.display_name,
+          col: rd.categoryCol,
+          value: category,
+        },
+        {
+          key: rd.valueCol.display_name,
+          col: rd.valueCol,
+          value: value ?? 0,
+        },
+      ],
+      event: params.event?.event as MouseEvent | undefined,
+    });
+  });
+
+  chart.on("mouseout", () => onHoverRef.current?.(null));
+
+  return () => {
+    chart.dispose();
+    chartRef.current = null;
+  };
+}, [colorScheme, onClickRef, onHoverRef, raceDataRef, seriesRef, settingsRef]);
 ```
 
 - [ ] **Step 3: Add the `rowKey` import**
@@ -1262,6 +1274,7 @@ git commit -m "feat(bar-race): drill-through click and hover tooltip"
 ## Task 7: Package README + final build + manual verification
 
 **Files:**
+
 - Replace: `packages/bar-race/README.md`
 
 - [ ] **Step 1: Write `packages/bar-race/README.md`**
@@ -1287,15 +1300,15 @@ needs at least 2 distinct values.
 
 ## Settings
 
-| Setting           | Description                                            |
-| ----------------- | ------------------------------------------------------ |
-| Frame column      | Time/ordinal column that drives the animation frames.  |
-| Category column   | The racing bars.                                       |
-| Value column      | Numeric column used for bar length.                    |
-| Bars shown        | Number of top bars visible while racing (default 10).  |
-| Seconds per frame | Duration of each frame transition (default 3).         |
-| When finished     | Loop (restart) or Hold at end.                         |
-| Show frame label  | Show the current frame value overlay.                  |
+| Setting           | Description                                           |
+| ----------------- | ----------------------------------------------------- |
+| Frame column      | Time/ordinal column that drives the animation frames. |
+| Category column   | The racing bars.                                      |
+| Value column      | Numeric column used for bar length.                   |
+| Bars shown        | Number of top bars visible while racing (default 10). |
+| Seconds per frame | Duration of each frame transition (default 3).        |
+| When finished     | Loop (restart) or Hold at end.                        |
+| Show frame label  | Show the current frame value overlay.                 |
 
 ## Development
 
@@ -1322,16 +1335,23 @@ Expected: type-check and build pass for **both** packages; prettier reports no c
 
 - [ ] **Step 3: Manual dev-server check**
 
-Run from `packages/bar-race/`:
+Follow the dev-mode steps in
+[docs/adding-a-new-viz.md](../../adding-a-new-viz.md) ("Develop with hot
+reload"). In short:
 
 ```bash
-npm run dev
+cd packages/bar-race
+npm run dev                 # build --watch + dev server on http://localhost:5174
 ```
 
-Then connect Metabase's custom-viz dev bundle to `http://localhost:5174` (per the
-landing page it serves) and open a question whose query returns a
-`time / category / value` result (e.g. `sales grouped by month and product`).
-Confirm:
+On a Metabase Pro/Enterprise instance (>= 1.62) started with
+`MB_CUSTOM_VIZ_PLUGIN_DEV_MODE_ENABLED=true`, go to **Admin → Custom
+visualizations** and set the dev server URL to `http://localhost:5174` (Docker:
+`http://host.docker.internal:5174`). "Bar Race" then appears in the chart picker
+tagged as a dev visualization and reloads on each rebuild.
+
+Open a question whose query returns a `time / category / value` result (e.g.
+`sales grouped by month and product`). Confirm:
 
 - On load, bars appear and animate, re-sorting each frame.
 - The value labels and x-axis format via the value column's formatting.
