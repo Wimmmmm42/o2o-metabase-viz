@@ -128,7 +128,14 @@ export function VisualizationComponent({
       chart.dispose();
       chartRef.current = null;
     };
-  }, [colorScheme, onClickRef, onHoverRef, raceDataRef, seriesRef, settingsRef]);
+  }, [
+    colorScheme,
+    onClickRef,
+    onHoverRef,
+    raceDataRef,
+    seriesRef,
+    settingsRef,
+  ]);
 
   // NOTE: keep this effect declared BEFORE the timer effect — it resets
   // frameIndexRef to 0 so the timer never references a stale/out-of-range

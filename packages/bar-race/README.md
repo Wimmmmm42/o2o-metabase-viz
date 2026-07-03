@@ -1,45 +1,40 @@
-# @o2o/viz-calendar-heatmap
+# @o2o/viz-bar-race
 
-A Calendar Heatmap custom visualization for Metabase. Renders a GitHub-style year calendar where each cell represents a day, colored by an aggregated metric value.
+A "bar chart race" custom visualization for Metabase: an animated horizontal
+bar chart whose bars re-rank across successive time frames.
 
 Requires Metabase `>= 62`.
 
-![calendar heatmap](./assets/calendar-heatmap.webp)
-
 ## Data requirements
 
-The query must return two columns:
+Long-format query with three columns:
 
-- **Date column** (dimension) — used as the day for each cell.
-- **Numeric column** (metric) — used to color each cell.
+- **Frame column** (time/ordinal) — each distinct value is one animation frame.
+- **Category column** — the racing bars.
+- **Value column** (numeric) — bar length.
 
-Rows must be aggregated by day; multiple rows with the same date will fail to render.
+A category missing in a frame is treated as `0` for that frame. The frame column
+needs at least 2 distinct values.
 
 ## Settings
 
-| Setting       | Description                                                         |
-| ------------- | ------------------------------------------------------------------- |
-| Date column   | Date dimension column. Auto-selected from the first date column.    |
-| Metric column | Numeric metric column. Auto-selected from the first numeric column. |
-| Color 1       | Start color of the heatmap ramp.                                    |
-| Color 2       | End color of the heatmap ramp.                                      |
-| Cell Shape    | Square, rounded, or circle.                                         |
+| Setting           | Description                                           |
+| ----------------- | ----------------------------------------------------- |
+| Frame column      | Time/ordinal column that drives the animation frames. |
+| Category column   | The racing bars.                                      |
+| Value column      | Numeric column used for bar length.                   |
+| Bars shown        | Number of top bars visible while racing (default 10). |
+| Seconds per frame | Duration of each frame transition (default 3).        |
+| When finished     | Loop (restart) or Hold at end.                        |
+| Show frame label  | Show the current frame value overlay.                 |
 
 ## Development
 
-Run these from **this package directory** (`packages/calendar-heatmap/`):
+Run from this package directory (`packages/bar-race/`):
 
-```bash
-npm run dev         # watch build + preview
-npm run build       # compiles src/ → dist/, then packages it into a .tgz
-npm run type-check  # tsc --noEmit
-```
+    npm run dev         # watch build + preview
+    npm run build       # compiles src/ -> dist/, then packages a .tgz
+    npm run type-check  # tsc --noEmit
 
-`npm run build` writes `<name>-<version>.tgz` to this package folder. Upload that
-file in **Admin → Custom visualizations → Add** to register the plugin.
-
-> The packaged archive contains `metabase-plugin.json` plus the build output
-> (`dist/index.js` and any whitelisted `dist/assets/*`).
-
-From the **repo root** you can build/type-check every viz at once with
-`npm run build` / `npm run type-check`, and format with `npm run prettier`.
+`npm run build` writes `Bar Race-1.0.0.tgz`; upload it in
+**Admin -> Custom visualizations -> Add**.
