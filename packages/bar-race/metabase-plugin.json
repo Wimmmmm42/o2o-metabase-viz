@@ -1,0 +1,7 @@
+{
+  "name": "Bar Race",
+  "icon": "bar-race.svg",
+  "metabase": {
+    "version": ">=1.62.0"
+  }
+}
