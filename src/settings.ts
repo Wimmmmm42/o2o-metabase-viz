@@ -135,9 +135,10 @@ export const getOption = (
         fontSize: 11,
         formatter: (params: MonthLabelFormatterParams) =>
           formatColumnAsMonth(
-            // UTC noon so the month is timezone-proof (a local-midnight
-            // first-of-month rolls back to the previous month in UTC).
-            new Date(Date.UTC(parseInt(params.yyyy), params.M, 1, 12)),
+            // echarts passes M as a 1-based month (1 = January), so subtract
+            // 1 for the 0-based Date month. UTC noon keeps it timezone-proof
+            // (a local-midnight first-of-month can roll to an adjacent month).
+            new Date(Date.UTC(parseInt(params.yyyy), params.M - 1, 1, 12)),
             dimensionCol,
           ),
       },
