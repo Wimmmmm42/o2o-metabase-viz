@@ -7,10 +7,8 @@ export const DEFAULT_CALENDAR_COLOR_2 = "#86226F";
 export const EMPTY_CELL_COLOR = "#ebedf0";
 export const EMPTY_CELL_COLOR_DARK = "#21262d";
 
-export type ColorMap = Record<
-  "empty" | "low" | "medium-low" | "medium-high" | "high",
-  string
->;
+/** A colour ramp, palest first (length 10). */
+export type ColorScale = string[];
 
 /** Linear interpolate between two colors (t: 0 = from, 1 = to) */
 function lerpColor(from: string, to: string, t: number): string {
@@ -23,35 +21,24 @@ function lerpColor(from: string, to: string, t: number): string {
 }
 
 const LIGHTNESS = 92;
-const DARKEN = 0.2;
 const SATURATE = 0.1;
 
-export function getColorScale(color: string): ColorMap {
-  const lightColor = Color(color).lightness(LIGHTNESS).saturate(SATURATE);
-  const darkColor = Color(color).darken(DARKEN).saturate(SATURATE);
-  const light = lightColor.string();
-  const dark = darkColor.string();
-  const scale = (t: number) => lerpColor(light, dark, t);
-  const colors = [0, 0.25, 0.5, 0.75, 1].map((value) => scale(value));
-
-  return {
-    empty: colors[0],
-    low: colors[1],
-    "medium-low": colors[2],
-    "medium-high": colors[3],
-    high: colors[4],
-  };
-}
-
-export function getCellColor(
-  value: number | undefined,
-  max: number,
-  colorScale: ColorMap,
-): string {
-  if (value === undefined) return EMPTY_CELL_COLOR;
-  if (value <= 0) return colorScale["empty"];
-  if (value <= max * 0.25) return colorScale["low"];
-  if (value <= max * 0.5) return colorScale["medium-low"];
-  if (value <= max * 0.75) return colorScale["medium-high"];
-  return colorScale["high"];
+/**
+ * Build a 10-shade ramp from two colours:
+ * shades 1-5 interpolate from a pale tint of color1 up to color1,
+ * shades 6-10 interpolate from color1 across to color2.
+ * The second half starts at t=0.2 so color1 is not duplicated.
+ */
+export function getColorScale(color1: string, color2: string): ColorScale {
+  const paleStart = Color(color1)
+    .lightness(LIGHTNESS)
+    .saturate(SATURATE)
+    .string();
+  const firstHalf = [0, 0.25, 0.5, 0.75, 1].map((t) =>
+    lerpColor(paleStart, color1, t),
+  );
+  const secondHalf = [0.2, 0.4, 0.6, 0.8, 1].map((t) =>
+    lerpColor(color1, color2, t),
+  );
+  return [...firstHalf, ...secondHalf];
 }

@@ -8,7 +8,10 @@ import { Button } from "./components/Button";
 import { useLatest } from "./hooks/useLatest";
 import { getOption } from "./settings";
 import type { Settings } from "./types";
-import { DEFAULT_CALENDAR_COLOR } from "./utils/colors";
+import {
+  DEFAULT_CALENDAR_COLOR,
+  DEFAULT_CALENDAR_COLOR_2,
+} from "./utils/colors";
 import { getChartData, toISODateString } from "./utils/data";
 import { getCellSize, getChartHeight, getChartWidth } from "./utils/looks";
 
@@ -151,6 +154,7 @@ export function VisualizationComponent({
   const canGoPrev = yearIndex > 0;
   const canGoNext = yearIndex < years.length - 1;
   const color = settings.color ?? DEFAULT_CALENDAR_COLOR;
+  const color2 = settings.color2 ?? DEFAULT_CALENDAR_COLOR_2;
   const cellShape = settings.cellShape;
 
   const cellSize = width ? getCellSize(width) : 0;
@@ -160,6 +164,7 @@ export function VisualizationComponent({
       data,
       currentYear,
       color,
+      color2,
       colorScheme,
       cellSize,
       cellShape,
@@ -170,6 +175,7 @@ export function VisualizationComponent({
     data,
     currentYear,
     color,
+    color2,
     colorScheme,
     cellSize,
     cellShape,

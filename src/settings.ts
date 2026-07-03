@@ -33,13 +33,14 @@ export const getOption = (
   data: Array<[DateString, Value]>,
   displayedYear: number,
   color: string,
+  color2: string,
   colorScheme: "light" | "dark" | undefined,
   cellSize: number,
   cellShape: CellShape | undefined,
   dimensionCol: Column,
   metricCol: Column,
 ): echarts.EChartsCoreOption => {
-  const colorScale = getColorScale(color);
+  const shades = getColorScale(color, color2);
   const isDarkScheme = colorScheme === "dark";
   const labelColor = isDarkScheme ? TEXT_COLOR_DARK : TEXT_COLOR;
   const displayedYearData = data.filter(([date]) => {
@@ -65,6 +66,23 @@ export const getOption = (
 
   const borderRadius = getBorderRadius(cellShape, cellSize);
 
+  type Piece = {
+    min?: number;
+    max?: number;
+    gt?: number;
+    lte?: number;
+    color: string;
+  };
+  const pieces: Piece[] = [
+    { min: 0, max: 0, color: shades[0] },
+    ...shades.map((color, i): Piece => {
+      const lower = (max * i) / 10;
+      return i === shades.length - 1
+        ? { gt: lower, color }
+        : { gt: lower, lte: (max * (i + 1)) / 10, color };
+    }),
+  ];
+
   return {
     backgroundColor: "transparent",
     tooltip: { show: false },
@@ -79,23 +97,9 @@ export const getOption = (
       itemSymbol: "circle",
       seriesIndex: 1,
       inRange: {
-        color: colorScale,
+        color: shades,
       },
-      pieces: [
-        { min: 0, max: 0, color: colorScale["empty"] },
-        { gt: 0, lte: max * 0.25, color: colorScale["low"] },
-        {
-          gt: max * 0.25,
-          lte: max * 0.5,
-          color: colorScale["medium-low"],
-        },
-        {
-          gt: max * 0.5,
-          lte: max * 0.75,
-          color: colorScale["medium-high"],
-        },
-        { gt: max * 0.75, color: colorScale["high"] },
-      ],
+      pieces,
       showLabel: false,
       formatter: (value: number) => formatValue(value, { column: metricCol }),
       text: ["More", "Less"],
