@@ -18,8 +18,10 @@ export type RaceData = {
   rowLookup: Map<string, number>;
 };
 
+// U+001F (ASCII unit separator) — a delimiter that never appears in real
+// column values, so (frame, category) keys can't collide.
 export function rowKey(frame: string, category: string): string {
-  return `${frame}�${category}`;
+  return `${frame}\u001F${category}`;
 }
 
 function compareFrames(a: string, b: string, frameCol: Column): number {
@@ -58,7 +60,8 @@ export function getRaceData(series: Series, settings: Settings): RaceData {
   data.rows.forEach((row, rowIndex) => {
     const frame = String(row[frameIdx]);
     const category = String(row[catIdx]);
-    const value = Number(row[valIdx]);
+    const raw = Number(row[valIdx]);
+    const value = Number.isFinite(raw) ? raw : 0;
     frameSet.add(frame);
     if (!catSeen.has(category)) {
       catSeen.add(category);
