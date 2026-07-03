@@ -109,6 +109,22 @@ const createVisualization: CreateCustomVisualization<Settings> = ({
           };
         },
       }),
+      barsShown: defineSetting({
+        id: "barsShown",
+        getSection: () => "Display",
+        title: "Bars shown",
+        widget: "number",
+        getDefault: () => 10,
+        getProps: () => ({ options: { isInteger: true, isNonNegative: true } }),
+      }),
+      secondsPerFrame: defineSetting({
+        id: "secondsPerFrame",
+        getSection: () => "Display",
+        title: "Seconds per frame",
+        widget: "number",
+        getDefault: () => 3,
+        getProps: () => ({ options: { isNonNegative: true } }),
+      }),
     },
     VisualizationComponent,
   });
